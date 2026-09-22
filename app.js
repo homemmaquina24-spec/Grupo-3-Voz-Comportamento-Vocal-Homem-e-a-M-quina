@@ -1,74 +1,67 @@
-"use strict";
-
 /*
  * ============================================================
- * VOZ DA MÁQUINA
- * Grupo 3 — Voz & Comportamento Vocal
+ * GRUPO 3 — VOZ DA MÁQUINA
+ * Voice Engine — Fundação
  * ============================================================
  *
- * Arquitetura:
+ * PRINCÍPIO:
+ * A Máquina controla o comportamento vocal.
+ * O provider apenas fornece a voz.
  *
- * Máquina
- *   ↓
- * Voice Engine
- *   ↓
- * Speech Preparation
- *   ↓
- * Voice Profile
- *   ↓
- * Provider Adapter
- *   ↓
- * Provider de voz
+ * Pipeline:
  *
- * IMPORTANTE:
+ * Texto
+ *   ↓
+ * Análise
+ *   ↓
+ * Intenção
+ *   ↓
+ * Segmentação
+ *   ↓
+ * Ritmo
+ *   ↓
+ * Pausas
+ *   ↓
+ * Intensidade / Ênfase
+ *   ↓
+ * Pronúncia
+ *   ↓
+ * Perfil da Voz
+ *   ↓
+ * Provider
+ *   ↓
+ * Áudio
  *
- * O provider NÃO controla a personalidade vocal da Máquina.
- *
- * A nossa lógica controla:
+ * FreeTTS não decide:
  * - ritmo
  * - pausas
  * - intensidade
- * - ênfase
- * - segmentação
  * - pronúncia
+ * - comportamento
  * - estados
- * - interrupção
- * - eventos
- *
- * O provider fornece o áudio da voz.
  * ============================================================
  */
 
 
 /* ============================================================
- * 1. ESTADOS OFICIAIS
- * ============================================================
- */
+   ESTADOS OFICIAIS
+   ============================================================ */
 
 const VOICE_STATES = Object.freeze({
-
   IDLE: "IDLE",
-
   LISTENING: "LISTENING",
-
   THINKING: "THINKING",
-
   SPEAKING: "SPEAKING",
-
   INTERRUPTED: "INTERRUPTED",
-
   ERROR: "ERROR"
-
 });
 
 
 /* ============================================================
- * 2. EVENTOS OFICIAIS
- * ============================================================
- */
+   EVENTOS OFICIAIS
+   ============================================================ */
 
 const VOICE_EVENTS = Object.freeze({
-
   LISTEN_START: "listen.start",
   LISTEN_END: "listen.end",
 
@@ -84,134 +77,218 @@ const VOICE_EVENTS = Object.freeze({
   VOICE_INTERRUPTED: "voice.interrupted",
 
   ERROR: "error"
-
 });
 
 
 /* ============================================================
- * 3. PERFIS DAS QUATRO VOZES
- * ============================================================
- *
- * Uma Máquina.
- * Quatro manifestações vocais.
- *
- * Núcleo é a voz padrão.
- * ============================================================
- */
+   PERFIS OFICIAIS DA MÁQUINA
+   ============================================================ */
 
 const VOICE_PROFILES = Object.freeze({
 
   nucleus: Object.freeze({
     id: "V01",
     name: "Núcleo",
-    providerVoice: "Duarte",
-    language: "pt-PT",
 
-    description:
-      "Masculina, profunda, calma, segura, inteligente e próxima.",
+    gender: "masculine",
 
-    default: true
+    providerVoice: "Pedro Pinto",
+    providerLanguage: "pt-PT",
+
+    role: "default",
+
+    characteristics: Object.freeze({
+      depth: "deep",
+      brightness: "moderate",
+      roughness: "low",
+      softness: "moderate",
+      presence: "secure",
+      proximity: "close",
+      resonance: "controlled",
+      naturalness: "high",
+      age: "adult"
+    }),
+
+    behavior: Object.freeze({
+      rhythm: "moderate-variable",
+      speed: "conversational-controlled",
+      intensity: "controlled",
+      pauses: "meaningful"
+    })
   }),
+
 
   iris: Object.freeze({
     id: "V02",
     name: "Íris",
-    providerVoice: "Raquel",
-    language: "pt-PT",
 
-    description:
-      "Feminina, suave, inteligente, próxima e atenta.",
+    gender: "feminine",
 
-    default: false
+    providerVoice: "Ana Andrade",
+    providerLanguage: "pt-PT",
+
+    role: "attention",
+
+    characteristics: Object.freeze({
+      depth: "moderate",
+      brightness: "soft",
+      roughness: "low",
+      softness: "high",
+      presence: "warm",
+      proximity: "close",
+      resonance: "light",
+      naturalness: "high",
+      age: "adult"
+    }),
+
+    behavior: Object.freeze({
+      rhythm: "fluid-variable",
+      speed: "conversational",
+      intensity: "soft-controlled",
+      pauses: "short-meaningful"
+    })
   }),
+
 
   vertex: Object.freeze({
     id: "V03",
     name: "Vértice",
-    providerVoice: "Antônio",
-    language: "pt-BR",
 
-    description:
-      "Masculina, firme, precisa, analítica e controlada.",
+    gender: "masculine",
 
-    default: false
+    providerVoice: "Marcos Batista",
+    providerLanguage: "pt-BR",
+
+    role: "analysis",
+
+    characteristics: Object.freeze({
+      depth: "moderate-deep",
+      brightness: "controlled",
+      roughness: "low",
+      softness: "low-moderate",
+      presence: "firm",
+      proximity: "clear",
+      resonance: "controlled",
+      naturalness: "high",
+      age: "adult"
+    }),
+
+    behavior: Object.freeze({
+      rhythm: "organized-variable",
+      speed: "controlled",
+      intensity: "stable",
+      pauses: "structuring"
+    })
   }),
+
 
   echoes: Object.freeze({
     id: "V04",
     name: "Ecos",
-    providerVoice: "Francisca",
-    language: "pt-BR",
 
-    description:
-      "Feminina, serena, grave, reservada e misteriosa.",
+    gender: "feminine",
 
-    default: false
+    providerVoice: "Aline Dos Santos",
+    providerLanguage: "pt-BR",
+
+    providerVariant: "AWS",
+
+    role: "special",
+
+    characteristics: Object.freeze({
+      depth: "grave",
+      brightness: "low-moderate",
+      roughness: "low",
+      softness: "moderate",
+      presence: "serene",
+      proximity: "close",
+      resonance: "deep-controlled",
+      naturalness: "high",
+      age: "adult"
+    }),
+
+    behavior: Object.freeze({
+      rhythm: "slow-when-needed",
+      speed: "moderate-slow-contextual",
+      intensity: "low-moderate",
+      pauses: "intentional"
+    })
   })
 
 });
 
 
 /* ============================================================
- * 4. CONFIGURAÇÃO ATUAL
- * ============================================================
- */
+   CONFIGURAÇÃO DA VOZ
+   ============================================================ */
 
-const VoiceConfig = {
+class VoiceConfig {
 
-  preferredVoice: "nucleus",
+  constructor() {
 
-  automaticVoiceSwitching: true,
+    this.preferredVoice = "nucleus";
 
-  provider: "freetts",
+    this.automaticVoiceSwitching = true;
 
-  naturalnessPriority: true
+    /*
+     * O provider atual é FreeTTS.
+     * O restante do comportamento pertence à Máquina.
+     */
+    this.provider = "freetts";
 
-};
+    this.naturalnessPriority = true;
+  }
+
+
+  getPreferredProfile() {
+
+    return VOICE_PROFILES[this.preferredVoice]
+      || VOICE_PROFILES.nucleus;
+  }
+}
 
 
 /* ============================================================
- * 5. PRONUNCIATION DICTIONARY
- * ============================================================
- *
- * Não vamos inventar pronúncias.
- *
- * Os termos entram aqui somente depois de serem validados
- * através de áudio real.
- * ============================================================
- */
+   DICIONÁRIO DE PRONÚNCIA
+   ============================================================ */
 
-const PronunciationDictionary = {
+class PronunciationDictionary {
 
-  entries: new Map(),
+  constructor() {
 
-  add(entry) {
+    this.entries = new Map();
+  }
 
-    if (!entry || !entry.original) {
-      throw new Error(
-        "Entrada de pronúncia inválida."
-      );
+
+  add(original, spoken, options = {}) {
+
+    if (!original || !spoken) {
+      return false;
     }
 
-    this.entries.set(
-      entry.original,
-      {
-        original: entry.original,
-        spoken: entry.spoken || entry.original,
-        context: entry.context || "",
-        voices: entry.voices || [],
-        validated: Boolean(entry.validated)
-      }
-    );
-  },
+    this.entries.set(original, {
+      original,
+      spoken,
+      context: options.context || "general",
+      voices: options.voices || null,
+      validated: options.validated === true
+    });
+
+    return true;
+  }
+
 
   get(text) {
 
-    return this.entries.get(text);
+    return this.entries.get(text) || null;
+  }
 
-  },
 
-  prepare(text) {
+  prepare(text, voiceProfile = null) {
+
+    if (!text) {
+      return "";
+    }
 
     let result = text;
 
@@ -221,479 +298,585 @@ const PronunciationDictionary = {
         continue;
       }
 
-      result = result.split(entry.original)
-        .join(entry.spoken);
+      if (
+        entry.voices &&
+        voiceProfile &&
+        !entry.voices.includes(voiceProfile.id)
+      ) {
+        continue;
+      }
+
+      /*
+       * Substituição apenas na representação falada.
+       * O texto visual original nunca é alterado.
+       */
+      result = result.split(entry.original).join(entry.spoken);
     }
 
     return result;
   }
-
-};
+}
 
 
 /* ============================================================
- * 6. SPEECH PREPARATION
- * ============================================================
+   DICIONÁRIO INICIAL
+   ============================================================ */
+
+const pronunciationDictionary =
+  new PronunciationDictionary();
+
+/*
+ * Não adicionamos pronúncias oficiais sem validação de áudio.
  *
- * Texto
- * ↓
- * análise
- * ↓
- * segmentação
- * ↓
- * ritmo
- * ↓
- * pausas
- * ↓
- * intensidade
- * ↓
- * ênfase
- * ↓
- * pronúncia
- *
- * Esta camada NÃO gera áudio.
- * ============================================================
+ * Quando uma palavra for testada e validada, poderá entrar aqui.
  */
 
-const SpeechPreparation = {
 
-  prepare(text, intent = "normal") {
+/* ============================================================
+   PREPARAÇÃO DA FALA
+   ============================================================ */
 
-    if (
-      typeof text !== "string" ||
-      !text.trim()
-    ) {
-      throw new Error(
-        "Não existe texto válido para preparar."
-      );
+class SpeechPreparation {
+
+  prepare(text, intent = "normal", voiceProfile = null) {
+
+    const cleanText = this.normalizeText(text);
+
+    if (!cleanText) {
+      return {
+        text: "",
+        intent,
+        segments: []
+      };
     }
 
-    const pronunciationText =
-      PronunciationDictionary.prepare(text.trim());
+    const spokenText =
+      pronunciationDictionary.prepare(
+        cleanText,
+        voiceProfile
+      );
 
     const segments =
-      this.segmentText(pronunciationText);
+      this.segmentText(spokenText);
+
+    const preparedSegments =
+      segments.map((segment, index) => {
+
+        return {
+          index,
+          text: segment.text,
+
+          rhythm: this.determineRhythm(
+            segment.text,
+            intent,
+            voiceProfile
+          ),
+
+          intensity: this.determineIntensity(
+            segment.text,
+            intent,
+            voiceProfile
+          ),
+
+          emphasis: this.determineEmphasis(
+            segment.text,
+            intent
+          ),
+
+          pauseAfter: this.determinePauseAfter(
+            segment.text,
+            index,
+            segments.length,
+            intent
+          )
+        };
+      });
+
 
     return {
-
-      originalText: text,
-
-      text: pronunciationText,
-
+      text: spokenText,
       intent,
 
-      segments,
+      voice: voiceProfile
+        ? voiceProfile.id
+        : "V01",
 
-      rhythm: this.determineRhythm(
-        pronunciationText,
-        intent
-      ),
-
-      intensity: this.determineIntensity(
-        pronunciationText,
-        intent
-      )
-
+      segments: preparedSegments
     };
-  },
+  }
 
 
+  normalizeText(text) {
+
+    return String(text || "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+
+  /*
+   * Segmentação por ideias/frases.
+   *
+   * Não divide palavra por palavra.
+   */
   segmentText(text) {
 
-    /*
-     * Segmentação por ideias.
-     *
-     * Não fazemos uma pausa entre cada palavra.
-     */
-
-    const matches = text.match(
-      /[^.!?…]+[.!?…]*/g
-    );
+    const matches =
+      text.match(/[^.!?…]+[.!?…]*/g);
 
     if (!matches) {
-      return [text.trim()];
+
+      return [{
+        text: text.trim()
+      }];
     }
 
     return matches
-      .map(segment => segment.trim())
-      .filter(Boolean);
-  },
+      .map(part => part.trim())
+      .filter(Boolean)
+      .map(part => ({
+        text: part
+      }));
+  }
 
 
-  determineRhythm(text, intent) {
+  determineRhythm(text, intent, voiceProfile) {
 
-    if (intent === "reflection") {
-      return "slow";
+    const length = text.length;
+
+    /*
+     * O ritmo depende do contexto.
+     * Não existe uma velocidade fixa por voz.
+     */
+
+    if (intent === "reflection" || intent === "contemplation") {
+      return "slower";
     }
 
     if (intent === "important") {
       return "controlled";
     }
 
-    if (text.length > 180) {
+    if (intent === "analysis" || intent === "explanation") {
+
+      if (length > 140) {
+        return "structured-slow";
+      }
+
       return "controlled";
     }
 
-    return "natural";
-  },
+    if (intent === "question") {
+      return "conversational";
+    }
+
+    if (length < 45) {
+      return "natural-short";
+    }
+
+    if (length > 180) {
+      return "structured";
+    }
+
+    return "conversational";
+  }
 
 
   determineIntensity(text, intent) {
 
-    if (intent === "important") {
-      return "medium-high";
+    if (
+      intent === "important" ||
+      intent === "determination"
+    ) {
+      return "present";
     }
 
-    if (intent === "reflection") {
-      return "low";
+    if (
+      intent === "reflection" ||
+      intent === "contemplation"
+    ) {
+      return "soft";
     }
 
-    return "medium";
+    if (intent === "error") {
+      return "clear";
+    }
+
+    /*
+     * Perguntas não precisam automaticamente
+     * de maior intensidade.
+     */
+    if (intent === "question") {
+      return "natural";
+    }
+
+    return "natural";
   }
 
-};
+
+  determineEmphasis(text, intent) {
+
+    const emphasis = [];
+
+    /*
+     * Ênfase é deliberadamente rara.
+     * Nesta fase identificamos apenas situações
+     * em que ela pode ser necessária.
+     */
+
+    if (
+      intent === "important" ||
+      intent === "determination"
+    ) {
+      emphasis.push("key-idea");
+    }
+
+    /*
+     * Frases muito curtas normalmente não precisam
+     * de uma ênfase adicional.
+     */
+
+    return emphasis;
+  }
+
+
+  determinePauseAfter(
+    text,
+    index,
+    total,
+    intent
+  ) {
+
+    const trimmed = text.trim();
+
+    /*
+     * Última frase:
+     * não precisamos criar uma pausa artificial.
+     */
+    if (index === total - 1) {
+      return "natural-end";
+    }
+
+
+    /*
+     * Reticências carregam mais reflexão.
+     */
+    if (trimmed.endsWith("…")) {
+      return "medium";
+    }
+
+
+    /*
+     * Perguntas recebem uma transição natural.
+     */
+    if (trimmed.endsWith("?")) {
+      return "short";
+    }
+
+
+    /*
+     * Ideias importantes/contemplativas:
+     * pausa um pouco mais perceptível.
+     */
+    if (
+      intent === "reflection" ||
+      intent === "contemplation"
+    ) {
+      return "medium";
+    }
+
+
+    /*
+     * Frases normais:
+     * pausa curta entre ideias.
+     */
+    return "short";
+  }
+}
 
 
 /* ============================================================
- * 7. PROVIDER ADAPTER
- * ============================================================
- *
- * Esta camada separa o Voice Engine do provider.
- *
- * O restante do sistema não precisa saber como o provider
- * funciona internamente.
- * ============================================================
- */
+   PROVIDER BASE
+   ============================================================ */
 
 class VoiceProviderAdapter {
 
   constructor(name) {
 
     this.name = name;
-
   }
 
 
-  async synthesize(request) {
+  async synthesize() {
 
     throw new Error(
-      `Provider "${this.name}" ainda não foi ligado.`
+      "O provider de voz ainda não foi implementado."
     );
-
   }
 
 
-  stop() {
+  async stop() {
 
     return false;
-
   }
-
 }
 
 
 /* ============================================================
- * 8. FREE TTS ADAPTER
- * ============================================================
- *
- * Estrutura preparada.
- *
- * A implementação real da API será adicionada depois,
- * sem alterar Voice Engine, estados ou preparação vocal.
- * ============================================================
- */
+   FREETTS ADAPTER
+   ============================================================ */
 
 class FreeTTSAdapter extends VoiceProviderAdapter {
 
   constructor() {
 
-    super("freetts");
-
+    super("FreeTTS");
   }
 
 
-  async synthesize(request) {
+  async synthesize(segment, voiceProfile) {
 
     /*
-     * Ponto de integração do FreeTTS.
+     * IMPORTANTE:
      *
-     * request terá:
+     * Não inventamos aqui endpoint, autenticação
+     * ou formato de resposta da API.
      *
-     * {
-     *   text,
-     *   voice,
-     *   language,
-     *   rhythm,
-     *   intensity,
-     *   segments
-     * }
-     *
-     * A API real será ligada aqui.
+     * A integração real será feita quando o endpoint
+     * oficial utilizado pelo projeto estiver definido.
      */
 
     throw new Error(
       "FreeTTS ainda não está conectado ao endpoint de áudio."
     );
-
   }
 
 
-  stop() {
+  async stop() {
 
     /*
-     * A interrupção real será implementada aqui.
+     * Quando o player real estiver integrado,
+     * este método interromperá o áudio imediatamente.
      */
 
     return true;
-
   }
-
 }
 
 
 /* ============================================================
- * 9. EVENT BUS
- * ============================================================
- *
- * Permite que Grupo 3 comunique estados semanticamente
- * ao Grupo 2.
- *
- * Grupo 3 NÃO diz:
- *
- *     "deixa o núcleo vermelho"
- *
- * Grupo 3 diz:
- *
- *     "listen.start"
- *
- * Grupo 2 decide a representação visual.
- * ============================================================
- */
+   EVENT BUS
+   ============================================================ */
 
 class VoiceEventBus {
 
   constructor() {
 
     this.listeners = new Map();
-
   }
 
 
-  on(event, callback) {
+  on(eventName, callback) {
 
-    if (!this.listeners.has(event)) {
-
-      this.listeners.set(
-        event,
-        new Set()
-      );
-
+    if (!this.listeners.has(eventName)) {
+      this.listeners.set(eventName, []);
     }
 
     this.listeners
-      .get(event)
-      .add(callback);
-
+      .get(eventName)
+      .push(callback);
   }
 
 
-  emit(event, payload = {}) {
+  emit(eventName, payload = {}) {
 
     const callbacks =
-      this.listeners.get(event);
+      this.listeners.get(eventName) || [];
 
-    if (!callbacks) {
-      return;
-    }
-
-    for (const callback of callbacks) {
+    callbacks.forEach(callback => {
 
       try {
-
-        callback({
-          event,
-          ...payload
-        });
-
+        callback(payload);
       } catch (error) {
 
         console.error(
           "Erro no listener:",
+          eventName,
           error
         );
-
       }
-
-    }
-
+    });
   }
-
 }
 
 
 /* ============================================================
- * 10. VOICE ENGINE
- * ============================================================
- */
+   VOICE ENGINE
+   ============================================================ */
 
 class VoiceEngine {
 
-  constructor({
-
-    provider,
-
-    eventBus,
-
-    config
-
-  }) {
+  constructor(provider, eventBus, config) {
 
     this.provider = provider;
-
     this.eventBus = eventBus;
-
     this.config = config;
 
     this.state = VOICE_STATES.IDLE;
 
     this.currentVoice =
-      config.preferredVoice;
+      config.getPreferredProfile();
 
     this.currentAudio = null;
 
     this.requestId = 0;
 
+    this.preparation =
+      new SpeechPreparation();
   }
 
 
-  getState() {
+  setState(nextState) {
 
-    return this.state;
+    this.state = nextState;
 
+    updateInterface();
   }
 
 
-  getVoiceProfile() {
+  selectVoice(profileId) {
 
-    return VOICE_PROFILES[
-      this.currentVoice
-    ];
+    if (!VOICE_PROFILES[profileId]) {
+      return false;
+    }
 
+    this.currentVoice =
+      VOICE_PROFILES[profileId];
+
+    updateInterface();
+
+    return true;
   }
 
 
-  setState(state) {
+  chooseVoice(intent = "normal") {
 
-    this.state = state;
+    /*
+     * Núcleo continua sendo a voz padrão.
+     *
+     * A troca automática só acontece quando houver
+     * benefício contextual real.
+     */
 
-    updateInterface({
-      state: this.state,
-      voice: this.getVoiceProfile().name,
-      provider: this.provider.name
-    });
+    if (!this.config.automaticVoiceSwitching) {
 
+      return this.currentVoice;
+    }
+
+
+    /*
+     * Nesta fase não fazemos trocas automáticas
+     * artificiais.
+     *
+     * Mantemos a voz atual para preservar continuidade.
+     */
+
+    return this.currentVoice;
   }
 
 
-  emit(event, payload = {}) {
-
-    this.eventBus.emit(
-      event,
-      payload
-    );
-
-    logEvent(
-      event,
-      payload
-    );
-
-  }
-
-
-  async speak(
-    text,
-    intent = "normal"
-  ) {
+  async speak(text, intent = "normal") {
 
     const requestId =
       ++this.requestId;
 
+
+    if (!text || !String(text).trim()) {
+      return;
+    }
+
+
+    /*
+     * Se a Máquina já estiver a falar,
+     * interrompemos antes de iniciar uma nova fala.
+     */
+    if (this.state === VOICE_STATES.SPEAKING) {
+
+      await this.interrupt();
+    }
+
+
+    const voiceProfile =
+      this.chooseVoice(intent);
+
+
     try {
 
-      if (
-        !text ||
-        !text.trim()
-      ) {
-        return;
-      }
-
-
       /*
-       * Se a Máquina estiver falando,
-       * uma nova fala substitui a anterior
-       * somente através do fluxo de interrupção.
+       * ======================================================
+       * THINKING
+       * ======================================================
        */
-
-      if (
-        this.state ===
-        VOICE_STATES.SPEAKING
-      ) {
-
-        this.interrupt();
-
-      }
-
 
       this.setState(
         VOICE_STATES.THINKING
       );
 
-      this.emit(
-        VOICE_EVENTS.THINKING_START
+      this.eventBus.emit(
+        VOICE_EVENTS.THINKING_START,
+        {
+          voice: voiceProfile.id,
+          voiceName: voiceProfile.name,
+          intent
+        }
       );
 
 
       const prepared =
-        SpeechPreparation.prepare(
+        this.preparation.prepare(
           text,
-          intent
+          intent,
+          voiceProfile
         );
 
 
-      this.emit(
-        VOICE_EVENTS.THINKING_END
-      );
-
-
-      if (
-        requestId !== this.requestId
-      ) {
+      /*
+       * Se outra ação interrompeu este pedido,
+       * abandonamos sem continuar.
+       */
+      if (requestId !== this.requestId) {
         return;
       }
 
 
-      const profile =
-        this.getVoiceProfile();
-
-
-      this.setState(
-        VOICE_STATES.SPEAKING
-      );
-
-
-      this.emit(
-        VOICE_EVENTS.VOICE_START,
+      this.eventBus.emit(
+        VOICE_EVENTS.THINKING_END,
         {
-          voice: profile.id,
-          voiceName: profile.name
+          voice: voiceProfile.id
         }
       );
 
 
       /*
-       * Cada segmento representa uma ideia,
-       * não uma palavra.
+       * ======================================================
+       * SPEAKING
+       * ======================================================
        */
+
+      this.setState(
+        VOICE_STATES.SPEAKING
+      );
+
+      this.eventBus.emit(
+        VOICE_EVENTS.VOICE_START,
+        {
+          voice: voiceProfile.id,
+          voiceName: voiceProfile.name,
+          intent,
+          provider: this.provider.name
+        }
+      );
+
 
       for (
         let index = 0;
@@ -701,9 +884,10 @@ class VoiceEngine {
         index++
       ) {
 
-        if (
-          requestId !== this.requestId
-        ) {
+        /*
+         * Pedido cancelado/interrompido.
+         */
+        if (requestId !== this.requestId) {
           return;
         }
 
@@ -712,78 +896,145 @@ class VoiceEngine {
           prepared.segments[index];
 
 
-        this.emit(
+        /*
+         * Evento semântico enviado para o Grupo 2.
+         *
+         * Grupo 2 decide como representar visualmente:
+         * - cor normal da Máquina
+         * - pulsação
+         * - intensidade
+         * - pausa
+         *
+         * O Grupo 3 não manda "fica vermelho", etc.
+         */
+        this.eventBus.emit(
           VOICE_EVENTS.VOICE_SEGMENT,
           {
-            index,
-            total:
-              prepared.segments.length,
-            text: segment,
-            rhythm:
-              prepared.rhythm,
-            intensity:
-              prepared.intensity
+            index: segment.index,
+            total: prepared.segments.length,
+
+            text: segment.text,
+
+            voice: voiceProfile.id,
+
+            rhythm: segment.rhythm,
+
+            intensity: segment.intensity,
+
+            emphasis: segment.emphasis,
+
+            pauseAfter: segment.pauseAfter
           }
         );
 
 
         /*
-         * Aqui será chamada a síntese real.
-         *
-         * Por enquanto a arquitetura está pronta,
-         * mas não fingimos que existe áudio.
+         * ====================================================
+         * PROVIDER
+         * ====================================================
          */
 
-        await this.synthesizeSegment({
+        const audio =
+          await this.synthesizeSegment(
+            segment,
+            voiceProfile,
+            requestId
+          );
 
-          text: segment,
 
-          profile,
+        if (requestId !== this.requestId) {
+          return;
+        }
 
-          preparation: prepared
 
-        });
+        /*
+         * O áudio real será guardado aqui quando
+         * o adapter estiver ligado ao provider.
+         */
+        this.currentAudio = audio;
 
+
+        /*
+         * Se o provider devolver um objeto de áudio
+         * reproduzível, podemos aguardar o final dele.
+         */
+        await this.playAudioIfAvailable(
+          audio,
+          requestId
+        );
+
+
+        if (requestId !== this.requestId) {
+          return;
+        }
+
+
+        /*
+         * ====================================================
+         * PAUSA ENTRE SEGMENTOS
+         * ====================================================
+         */
 
         if (
           index <
           prepared.segments.length - 1
         ) {
 
-          this.emit(
+          this.eventBus.emit(
             VOICE_EVENTS.VOICE_PAUSE,
             {
-              reason:
-                "segment-transition"
+              duration:
+                segment.pauseAfter,
+
+              index: segment.index
             }
           );
 
+          await this.waitForPause(
+            segment.pauseAfter,
+            requestId
+          );
         }
-
       }
 
 
-      if (
-        requestId !== this.requestId
-      ) {
+      if (requestId !== this.requestId) {
         return;
       }
 
 
-      this.emit(
-        VOICE_EVENTS.VOICE_END
+      /*
+       * ======================================================
+       * VOICE END
+       * ======================================================
+       *
+       * Este evento só acontece depois de o áudio
+       * terminar realmente.
+       */
+
+      this.eventBus.emit(
+        VOICE_EVENTS.VOICE_END,
+        {
+          voice: voiceProfile.id
+        }
       );
 
+
+      this.currentAudio = null;
 
       this.setState(
         VOICE_STATES.IDLE
       );
 
-
     } catch (error) {
 
+      if (requestId !== this.requestId) {
+        return;
+      }
+
+
       console.error(
-        "Voice Engine:",
+        "Voice Engine error:",
         error
       );
 
@@ -793,48 +1044,180 @@ class VoiceEngine {
       );
 
 
-      this.emit(
+      this.eventBus.emit(
         VOICE_EVENTS.ERROR,
         {
           message:
-            "Não foi possível concluir a fala."
+            "Não consegui concluir a fala agora.",
+
+          error: error.message,
+
+          voice: voiceProfile.id
         }
       );
 
 
+      this.currentAudio = null;
+
+
+      /*
+       * Recuperação para IDLE.
+       */
       this.setState(
         VOICE_STATES.IDLE
       );
+    }
+  }
 
+
+  async synthesizeSegment(
+    segment,
+    voiceProfile,
+    requestId
+  ) {
+
+    if (requestId !== this.requestId) {
+      return null;
     }
 
+
+    return await this.provider.synthesize(
+      segment,
+      voiceProfile
+    );
   }
 
 
-  async synthesizeSegment(request) {
+  async playAudioIfAvailable(
+    audio,
+    requestId
+  ) {
+
+    if (!audio) {
+      return;
+    }
+
+
+    if (requestId !== this.requestId) {
+      return;
+    }
+
 
     /*
-     * Ponto único onde o Voice Engine pede
-     * áudio ao provider.
+     * Preparação para diferentes tipos de retorno
+     * do futuro adapter.
      */
 
-    return this.provider.synthesize(
-      request
-    );
+    if (
+      typeof audio.play === "function"
+    ) {
 
+      await audio.play();
+
+      if (
+        typeof audio.addEventListener ===
+        "function"
+      ) {
+
+        await new Promise(resolve => {
+
+          const finish = () => {
+            resolve();
+          };
+
+          audio.addEventListener(
+            "ended",
+            finish,
+            { once: true }
+          );
+
+          audio.addEventListener(
+            "error",
+            finish,
+            { once: true }
+          );
+        });
+      }
+    }
   }
 
 
-  interrupt() {
+  async waitForPause(
+    pauseType,
+    requestId
+  ) {
 
-    this.requestId++;
+    if (requestId !== this.requestId) {
+      return;
+    }
 
 
-    this.provider.stop();
+    let duration = 0;
 
 
-    this.emit(
-      VOICE_EVENTS.VOICE_INTERRUPTED
+    switch (pauseType) {
+
+      case "short":
+        duration = 180;
+        break;
+
+      case "medium":
+        duration = 420;
+        break;
+
+      case "long":
+        duration = 700;
+        break;
+
+      case "natural-end":
+      default:
+        duration = 0;
+        break;
+    }
+
+
+    if (duration <= 0) {
+      return;
+    }
+
+
+    await new Promise(resolve => {
+
+      setTimeout(resolve, duration);
+    });
+  }
+
+
+  async interrupt() {
+
+    /*
+     * Invalidamos imediatamente o pedido atual.
+     */
+    ++this.requestId;
+
+
+    try {
+
+      await this.provider.stop();
+
+    } catch (error) {
+
+      console.warn(
+        "Não foi possível parar o provider:",
+        error
+      );
+    }
+
+
+    this.currentAudio = null;
+
+
+    this.eventBus.emit(
+      VOICE_EVENTS.VOICE_INTERRUPTED,
+      {
+        voice:
+          this.currentVoice.id
+      }
     );
 
 
@@ -844,12 +1227,14 @@ class VoiceEngine {
 
 
     /*
-     * Depois da interrupção,
-     * a Máquina passa imediatamente para escuta.
+     * Depois da interrupção:
+     *
+     * INTERRUPTED
+     *      ↓
+     * LISTENING
      */
 
     this.startListening();
-
   }
 
 
@@ -860,257 +1245,181 @@ class VoiceEngine {
     );
 
 
-    this.emit(
-      VOICE_EVENTS.LISTEN_START
+    this.eventBus.emit(
+      VOICE_EVENTS.LISTEN_START,
+      {
+        voice:
+          this.currentVoice.id
+      }
     );
-
   }
 
 
   stopListening() {
 
-    this.emit(
-      VOICE_EVENTS.LISTEN_END
+    if (
+      this.state !== VOICE_STATES.LISTENING
+    ) {
+      return;
+    }
+
+
+    this.eventBus.emit(
+      VOICE_EVENTS.LISTEN_END,
+      {
+        voice:
+          this.currentVoice.id
+      }
     );
 
 
     this.setState(
       VOICE_STATES.IDLE
     );
-
   }
 
+
+  thinkingPause() {
+
+    if (
+      this.state !== VOICE_STATES.THINKING
+    ) {
+      return;
+    }
+
+
+    this.eventBus.emit(
+      VOICE_EVENTS.THINKING_PAUSE,
+      {
+        voice:
+          this.currentVoice.id
+      }
+    );
+  }
+
+
+  stop() {
+
+    ++this.requestId;
+
+    this.currentAudio = null;
+
+    this.provider.stop();
+
+    this.eventBus.emit(
+      VOICE_EVENTS.VOICE_INTERRUPTED,
+      {
+        voice:
+          this.currentVoice.id
+      }
+    );
+
+    this.setState(
+      VOICE_STATES.IDLE
+    );
+  }
 }
 
 
 /* ============================================================
- * 11. INSTÂNCIAS PRINCIPAIS
- * ============================================================
- */
+   INSTÂNCIAS PRINCIPAIS
+   ============================================================ */
+
+const voiceConfig =
+  new VoiceConfig();
 
 const eventBus =
   new VoiceEventBus();
 
-
-const provider =
+const freeTTSAdapter =
   new FreeTTSAdapter();
 
-
 const voiceEngine =
-  new VoiceEngine({
-
-    provider,
-
+  new VoiceEngine(
+    freeTTSAdapter,
     eventBus,
-
-    config: VoiceConfig
-
-  });
+    voiceConfig
+  );
 
 
 /* ============================================================
- * 12. EVENTOS DE TESTE
- * ============================================================
- */
+   ELEMENTOS DA INTERFACE
+   ============================================================ */
 
-eventBus.on(
-  VOICE_EVENTS.VOICE_START,
-  event => {
+const stateElement =
+  document.getElementById(
+    "voice-state"
+  );
 
-    console.log(
-      "Máquina começou a falar:",
-      event
-    );
+const profileElement =
+  document.getElementById(
+    "voice-profile"
+  );
 
-  }
-);
+const providerElement =
+  document.getElementById(
+    "voice-provider"
+  );
 
-
-eventBus.on(
-  VOICE_EVENTS.VOICE_SEGMENT,
-  event => {
-
-    console.log(
-      "Segmento vocal:",
-      event
-    );
-
-  }
-);
-
-
-eventBus.on(
-  VOICE_EVENTS.VOICE_PAUSE,
-  event => {
-
-    console.log(
-      "Pausa vocal:",
-      event
-    );
-
-  }
-);
-
-
-eventBus.on(
-  VOICE_EVENTS.VOICE_END,
-  event => {
-
-    console.log(
-      "Máquina terminou de falar."
-    );
-
-  }
-);
-
-
-eventBus.on(
-  VOICE_EVENTS.LISTEN_START,
-  event => {
-
-    console.log(
-      "Máquina está ouvindo."
-    );
-
-  }
-);
-
-
-eventBus.on(
-  VOICE_EVENTS.VOICE_INTERRUPTED,
-  event => {
-
-    console.log(
-      "Fala interrompida."
-    );
-
-  }
-);
-
-
-/* ============================================================
- * 13. INTERFACE DE TESTE
- * ============================================================
- */
-
-const speechInput =
+const inputElement =
   document.getElementById(
     "speech-input"
   );
-
 
 const speakButton =
   document.getElementById(
     "speak-button"
   );
 
-
 const stopButton =
   document.getElementById(
     "stop-button"
   );
 
-
-if (speakButton) {
-
-  speakButton.addEventListener(
-    "click",
-    async () => {
-
-      const text =
-        speechInput.value.trim();
-
-
-      if (!text) {
-        return;
-      }
-
-
-      await voiceEngine.speak(
-        text
-      );
-
-    }
+const eventLog =
+  document.getElementById(
+    "event-log"
   );
-
-}
-
-
-if (stopButton) {
-
-  stopButton.addEventListener(
-    "click",
-    () => {
-
-      voiceEngine.interrupt();
-
-    }
-  );
-
-}
 
 
 /* ============================================================
- * 14. FUNÇÕES DA INTERFACE
- * ============================================================
- */
+   INTERFACE
+   ============================================================ */
 
-function updateInterface({
-
-  state,
-  voice,
-  provider
-
-}) {
-
-  const stateElement =
-    document.getElementById(
-      "voice-state"
-    );
-
-  const voiceElement =
-    document.getElementById(
-      "voice-profile"
-    );
-
-  const providerElement =
-    document.getElementById(
-      "voice-provider"
-    );
-
+function updateInterface() {
 
   if (stateElement) {
+
     stateElement.textContent =
-      state;
+      voiceEngine.state;
   }
 
 
-  if (voiceElement) {
-    voiceElement.textContent =
-      voice;
+  if (profileElement) {
+
+    profileElement.textContent =
+      voiceEngine.currentVoice.name;
   }
 
 
   if (providerElement) {
-    providerElement.textContent =
-      provider;
-  }
 
+    providerElement.textContent =
+      `${voiceEngine.provider.name} Adapter`;
+  }
 }
 
 
+/* ============================================================
+   LOG DE EVENTOS
+   ============================================================ */
+
 function logEvent(
-  event,
-  payload
+  eventName,
+  payload = {}
 ) {
 
-  const log =
-    document.getElementById(
-      "event-log"
-    );
-
-
-  if (!log) {
+  if (!eventLog) {
     return;
   }
 
@@ -1121,56 +1430,118 @@ function logEvent(
 
 
   const line =
-    `[${time}] ${event}`;
-
-
-  const details =
-    Object.keys(payload).length
-      ? ` ${JSON.stringify(payload)}`
-      : "";
+    `[${time}] ${eventName}\n` +
+    `${JSON.stringify(
+      payload,
+      null,
+      2
+    )}\n`;
 
 
   if (
-    log.textContent ===
+    eventLog.textContent ===
     "Aguardando..."
   ) {
 
-    log.textContent = "";
-
+    eventLog.textContent = "";
   }
 
 
-  log.textContent +=
-    `${line}${details}\n`;
+  eventLog.textContent +=
+    line + "\n";
 
 
-  log.scrollTop =
-    log.scrollHeight;
-
+  eventLog.scrollTop =
+    eventLog.scrollHeight;
 }
 
 
 /* ============================================================
- * 15. ESTADO INICIAL
- * ============================================================
- */
+   LIGAÇÃO DOS EVENTOS AO LOG
+   ============================================================ */
 
-updateInterface({
+Object.values(
+  VOICE_EVENTS
+).forEach(eventName => {
 
-  state:
-    voiceEngine.getState(),
+  eventBus.on(
+    eventName,
+    payload => {
 
-  voice:
-    voiceEngine
-      .getVoiceProfile()
-      .name,
+      logEvent(
+        eventName,
+        payload
+      );
 
-  provider:
-    provider.name
-
+      updateInterface();
+    }
+  );
 });
 
 
+/* ============================================================
+   BOTÃO FALAR
+   ============================================================ */
+
+if (speakButton) {
+
+  speakButton.addEventListener(
+    "click",
+    async () => {
+
+      const text =
+        inputElement
+          ? inputElement.value.trim()
+          : "";
+
+
+      if (!text) {
+        return;
+      }
+
+
+      await voiceEngine.speak(
+        text,
+        "normal"
+      );
+    }
+  );
+}
+
+
+/* ============================================================
+   BOTÃO PARAR
+   ============================================================ */
+
+if (stopButton) {
+
+  stopButton.addEventListener(
+    "click",
+    () => {
+
+      voiceEngine.stop();
+    }
+  );
+}
+
+
+/* ============================================================
+   INICIALIZAÇÃO
+   ============================================================ */
+
+updateInterface();
+
+
 console.log(
-  "Voz da Máquina — Voice Engine inicializado."
+  "Grupo 3 — Voz da Máquina iniciado."
+);
+
+console.log(
+  "Voz atual:",
+  voiceEngine.currentVoice.name
+);
+
+console.log(
+  "Provider:",
+  voiceEngine.provider.name
 );
