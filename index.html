@@ -1,1 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
+  <title>Voz da Máquina — Grupo 3</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <main class="voice-lab">
+
+    <header class="header">
+      <span class="eyebrow">GRUPO 3</span>
+      <h1>Voz da Máquina</h1>
+      <p>Voice Engine — Fundação</p>
+    </header>
+
+    <section class="status-panel">
+
+      <div class="status-row">
+        <span>Estado</span>
+        <strong id="voice-state">IDLE</strong>
+      </div>
+
+      <div class="status-row">
+        <span>Voz</span>
+        <strong id="voice-profile">Núcleo</strong>
+      </div>
+
+      <div class="status-row">
+        <span>Provider</span>
+        <strong id="voice-provider">FreeTTS Adapter</strong>
+      </div>
+
+    </section>
+
+    <section class="test-panel">
+
+      <label for="speech-input">
+        Texto para teste
+      </label>
+
+      <textarea
+        id="speech-input"
+        rows="5"
+        placeholder="Escreve aqui uma frase para testar a Voz da Máquina..."
+      ></textarea>
+
+      <button id="speak-button" type="button">
+        Falar
+      </button>
+
+      <button id="stop-button" type="button">
+        Parar
+      </button>
+
+    </section>
+
+    <section class="event-panel">
+
+      <h2>Eventos</h2>
+
+      <pre id="event-log">Aguardando...</pre>
+
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+
+</body>
+  </html>
